@@ -13,8 +13,7 @@
               :class="{ 'bg-[#E0F9E0]': filterChosen === index }"
               @click="toggleFilter(index)">
               <div class="flex items-center">
-                <font-awesome-icon :icon="card.icon" class="text-[32px]" 
-                                   :style="{ 'color': card.iconColor }" />
+                <font-awesome-icon :icon="card.icon" class="text-[32px]" :style="{ 'color': card.iconColor }" />
                 <div class="mx-4 h-full border-l border-gray" />
                 <div class="flex flex-col">
                   <div class="text-sm">{{ card.name }}</div>
@@ -42,9 +41,8 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const emit = defineEmits(["filter-plant"])
 const props = defineProps(['plants', 'environmentalConditions'])
 
 const filterChosen = ref(-1)
@@ -54,16 +52,10 @@ const filterOptions = ref([
   { name: 'Deficient', count: 0, icon: ['fas', 'fa-exclamation-circle'], iconColor: '#FF9999'}
 ])
 
-const emit = defineEmits(["filter-plant"])
-watch(filterChosen, (newValue) => {emit("filter-plant", newValue)})
 const toggleFilter = (index) => {filterChosen.value = filterChosen.value === index ? -1 : index}
-
-const updateFilter = () => {
-  filterOptions.value.forEach((option) => {
-    option.count = props.plants.filter((plant) => plant.status === option.name).length
-  })
-}
+const updateFilter = () => filterOptions.value.forEach((option) => option.count = props.plants.filter((plant) => plant.status === option.name).length)
 
 onMounted(() => {updateFilter()})
 watch(() => props.plants, () => {updateFilter()}, { deep: true })
+watch(filterChosen, (newValue) => {emit("filter-plant", newValue)})
 </script>

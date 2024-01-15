@@ -38,24 +38,9 @@ import { ref, watch, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { useStore } from 'vuex'
 
-// Initialisiere die users-Reactive-Variable als leeres Array
+const emit = defineEmits(["toggle-login"])
+
 const users = ref([])
-
-// Funktion zum Abrufen von Benutzerdaten aus der Datenbank
-async function fetchUsersFromDatabase() {
-  try {
-    const response = await axios.get('http://localhost:3001/users')
-    if (response.status === 200) users.value = response.data
-  } catch (error) {
-    console.error('Fehler beim Fetchen der Benutzerdaten:', error);
-  }
-}
-
-// Rufen Sie die Benutzerdaten aus der Datenbank beim Laden der Komponente auf
-onMounted(() => {
-  fetchUsersFromDatabase();
-})
-
 const username = ref()
 const password = ref()
 const wrongCredentials = ref(false)
@@ -63,7 +48,15 @@ const disableButton = ref(true)
 const router = useRouter()
 const store = useStore()
 
-const emit = defineEmits(["toggle-login"])
+async function getUsers() {
+  try {
+    const response = await axios.get('http://localhost:3001/users')
+    if (response.status === 200) users.value = response.data
+  } catch (error) {
+    console.error('Fehler beim Get der Benutzer:', error)
+  }
+}
+
 const toggleLogin = () => emit("toggle-login", true)
 function login(){
   const user = users.value.find(user => user.name === username.value)
@@ -73,9 +66,9 @@ function login(){
   } else wrongCredentials.value = true
 }
 
+onMounted(() => getUsers())
 watch([username, password], () => disableButton.value = !username.value || !password.value)
 </script>
-
 
 <style>
 .p-password .p-password-input{

@@ -9,7 +9,7 @@ router.post('/login', (req, res) => {
   pool.query('SELECT * FROM User WHERE name = ?', [name])
     .then(([results]) => {
       if (results.length > 0) {
-        const user = results[0];
+        const user = results[0]
 
         //Passwörter vergleichen
         bcrypt.compare(password, user.password)
@@ -43,7 +43,7 @@ router.post('/register', (req, res) => {
         res.status(409).json({ message: 'Username already taken' });
       } else {
         // Benutzer erstellen
-        let defaultLanguage = 'en' // Standardmäßige Sprache
+        let defaultLanguage = 'en'
         pool.query(
           'INSERT INTO User (name, password, language) VALUES (?, ?, ?)',
           [name, password, language || defaultLanguage]
@@ -85,60 +85,7 @@ router.get('/users', async (req, res) => {
   }
 })
 
-// GET Benutzer anhand ID ================================================================================================================
-router.get('/users/:id', async (req, res) => {
-  const { id } = req.params
-  try {
-    const [user] = await pool.query('SELECT * FROM User WHERE ID = ?', [id]);
-    
-    if (user.length === 0) return res.status(404).json({ message: 'User not found' });
-    res.json(user[0])
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
-
-// Passwort aktualisieren ================================================================================================================
-router.put('/users/:id/password', async (req, res) => {
-  const { id } = req.params
-  const { oldPassword, newPassword } = req.body
-
-  try {
-    const [user] = await pool.query('SELECT * FROM User WHERE ID = ?', [id])
-    
-    //Benutzer prüfen
-    if (user.length === 0) return res.status(404).json({ message: 'User not found' })
-    
-    //altes Passwort prüfen
-    if (oldPassword !== user[0].password) return res.status(401).json({ message: 'Old password is incorrect.' })
-    
-    //Passwort aktualisieren
-    await pool.query('UPDATE User SET password = ? WHERE ID = ?', [newPassword, id])
-    res.json({ message: 'Password updated successfully.' })
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error.' })
-  }
-})
-
-// Update user information
-router.put('/users/:id', async (req, res) => {
-  const { id } = req.params
-  const { name, newPassword } = req.body
-
-  try {
-    const updateQuery = 'UPDATE User SET name = ?, password = ? WHERE ID = ?'
-    const [updateResults] = await pool.execute(updateQuery, [name, newPassword, id])
-
-    if (updateResults.affectedRows > 0) res.json({ message: 'User updated successfully.' })
-    else res.status(404).json({ message: 'User not found.' })
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error.' })
-  }
-});
-
-
-// Delete user
+// Delte Benutzer ====================================================================================================================
 router.delete('/users/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -152,32 +99,27 @@ router.delete('/users/:id', async (req, res) => {
   }
 });
 
-// PUT route for updating user password
+// PUT Passwort ====================================================================================================================
 router.put('/users/:id/password', async (req, res) => {
   const { id } = req.params;
   const { oldPassword, newPassword } = req.body
 
   try {
     const [user] = await pool.query('SELECT * FROM User WHERE ID = ?', [id])
-    if (user.length === 0) {
-      return res.status(404).json({ message: 'User not found.' })
-    }
-
-    const passwordIsValid = await bcrypt.compare(oldPassword, user[0].password)
-    if (!passwordIsValid) {
-      return res.status(401).json({ message: 'Old password is incorrect.' })
-    }
+    if (user.length === 0) return res.status(404).json({ message: 'User not found.' })
+    
+    const isPasswordsCorrect = await bcrypt.compare(oldPassword, user[0].password)
+    if (!isPasswordsCorrect) return res.status(401).json({ message: 'Old password is incorrect.' })
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10)
     await pool.query('UPDATE User SET password = ? WHERE ID = ?', [hashedNewPassword, id])
     res.json({ message: 'Password updated successfully.' })
   } catch (error) {
-    console.error(error)
     res.status(500).json({ error: 'Internal server error.' })
   }
-});
+})
 
-// Route zum Abrufen von Pflanzendaten
+// GET Pflanzen =====================================================================================================================
 router.get('/plants', async (req, res) => {
   try {
     const [plants] = await pool.query('SELECT * FROM Plant'); // Annahme: Die Pflanzendaten befinden sich in der Tabelle "Plant"
@@ -188,100 +130,49 @@ router.get('/plants', async (req, res) => {
   }
 });
 
-router.get('/plants/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [plant] = await pool.query('SELECT * FROM Plant WHERE ID = ?', [id])
-    if (plant.length === 0) {
-      return res.status(404).json({ message: 'Plant not found.' })
-    }
-    res.json(plant);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' })
-  }
-});
-
-router.post('/userplant', (req, res) => {
-  const { userID, plantID } = req.body
-
-  // SQL Query to insert a new UserPlant relationship
-  const query = 'INSERT INTO UserPlant (userID, plantID) VALUES (?, ?)'
-  pool.query(query, [userID, plantID])
-    .then((results) => {
-      res.status(201).json({ message: 'UserPlant relationship created', id: results.insertId })
-    })
-    .catch((error) => {
-      console.error(error);
-      res.status(500).json({ error: 'Database error' })
-    });
-});
-
+// GET Pflanzen eines Benutzers =======================================================================================================
 router.get('/user/:userId/plants', async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.params
 
   try {
     const [results] = await pool.query('SELECT * FROM UserPlant WHERE userID = ?', [userId])
     res.status(200).json(results);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: 'Database error' })
   }
-});
+})
 
+// POST BenutzerPflanze ==============================================================================================================
 router.post('/user/:userId/plants/:plantId', async (req, res) => {
   const { userId, plantId } = req.params
 
-  console.log(userId)
-    console.log(plantId)
-
   try {
-    // Ausführung der SQL-Abfrage mit den Parametern
     await pool.execute('INSERT INTO UserPlant (userID, plantID) VALUES (?, ?)', [userId, plantId])
-
-    // Hier können Sie die Antwort an den Client senden oder andere Aktionen durchführen
     res.status(201).json({ message: 'Neue Benutzerpflanze erfolgreich hinzugefügt' })
   } catch (error) {
-    console.error('Fehler beim Hinzufügen der Benutzerpflanze:', error)
     res.status(500).json({ error: 'Interner Serverfehler' })
   }
 });
 
 
-// Delete a UserPlant relationship
+// DELETE BenutzerPflanze ============================================================================================================
 router.delete('/user/:userId/plants/:plantId', async (req, res) => {
   const { userId, plantId } = req.params
 
   try {
     const [deleteResults] = await pool.execute('DELETE FROM UserPlant WHERE userID = ? AND plantID = ?', [userId, plantId])
 
-    if (deleteResults.affectedRows > 0) {
-      res.json({ message: 'UserPlant relationship deleted successfully' })
-    } else {
-      res.status(404).json({ message: 'UserPlant relationship not found' })
-    }
+    if (deleteResults.affectedRows > 0) res.json({ message: 'Users plant removed' })
+    else res.status(404).json({ message: 'User does not have the plant' })
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: 'Internal server error' })
-  }
-});
-
-router.get('/environmentalconditions', async (req, res) => {
-  try {
-    const [results] = await pool.query('SELECT * FROM EnvironmentalCondition')
-    res.json(results)
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error.' })
   }
 })
 
-// Get environmental conditions for a plant
-router.get('/plants/:plantId/environmental-conditions', async (req, res) => {
-  const { plantId } = req.params
-
+// GET Umweltbedingungen ============================================================================================================
+router.get('/environmentalconditions', async (req, res) => {
   try {
-    const query = 'SELECT * FROM EnvironmentalCondition WHERE plantId = ?'
-    const [results] = await pool.execute(query, [plantId])
+    const [results] = await pool.query('SELECT * FROM EnvironmentalCondition')
     res.json(results)
   } catch (error) {
     res.status(500).json({ error: 'Internal server error.' })

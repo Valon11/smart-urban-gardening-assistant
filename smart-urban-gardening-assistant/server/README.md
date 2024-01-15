@@ -1,4 +1,4 @@
-# Webanwendung
+# Webserver
 
 um den Server zu starten, führen Sie folgende Befehle aus:
 
