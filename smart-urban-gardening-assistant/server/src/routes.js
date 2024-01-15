@@ -85,19 +85,18 @@ router.get('/users', async (req, res) => {
   }
 })
 
-// Delte Benutzer ====================================================================================================================
+// Delete Benutzer ==================================================================================================================
 router.delete('/users/:id', async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params
 
   try {
     await pool.execute('DELETE FROM UserPlant WHERE userID = ?', [id])
     await pool.execute('DELETE FROM User WHERE ID = ?', [id])
-    res.json({ message: 'User deleted successfully.' })
+    res.status(200).json({ message: 'User deleted successfully.' })
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: 'Internal server error.' })
   }
-});
+})
 
 // PUT Passwort ====================================================================================================================
 router.put('/users/:id/password', async (req, res) => {
@@ -122,13 +121,13 @@ router.put('/users/:id/password', async (req, res) => {
 // GET Pflanzen =====================================================================================================================
 router.get('/plants', async (req, res) => {
   try {
-    const [plants] = await pool.query('SELECT * FROM Plant'); // Annahme: Die Pflanzendaten befinden sich in der Tabelle "Plant"
+    const [plants] = await pool.query('SELECT * FROM Plant') // Annahme: Die Pflanzendaten befinden sich in der Tabelle "Plant"
     res.json(plants)
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Internal server error.' })
   }
-});
+})
 
 // GET Pflanzen eines Benutzers =======================================================================================================
 router.get('/user/:userId/plants', async (req, res) => {
@@ -152,8 +151,7 @@ router.post('/user/:userId/plants/:plantId', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Interner Serverfehler' })
   }
-});
-
+})
 
 // DELETE BenutzerPflanze ============================================================================================================
 router.delete('/user/:userId/plants/:plantId', async (req, res) => {

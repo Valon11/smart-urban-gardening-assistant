@@ -97,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, watchEffect } from 'vue'
 import { useConfirm } from "primevue/useconfirm"
 import { useRouter } from "vue-router"
 import { useStore } from 'vuex'
@@ -140,7 +140,7 @@ async function addUserPlant() {
     emit("add-plant", plantChosen.value)
     plantChosen.value = []
   } catch (error) {
-    console.error('Fehler beim Post der Pflanze:', error);
+    console.error('Fehler beim Post der Pflanze:', error)
   }
 }
 
@@ -187,17 +187,19 @@ const confirmDeletion = (event) => {
 
 async function deleteUser() {
   try {
-    await axios.delete(`http://localhost:3001/users/${store.getters.getUser.ID}`)
-    router.push('/start')
+    const response = await axios.delete(`http://localhost:3001/users/${store.getters.getUser.ID}`)
+    if(response.status === 200) router.push('/start')
   } catch (error) {
     console.error('Fehler beim Delete des Benutzers:', error)
   }
 }
 
-onMounted(() => {
-  plantOptions.value = [...props.plants]
-  .filter(plant => !props.plantsByUser.some(userPlant => userPlant.ID === plant.ID))
-  .sort((a, b) => a.name.localeCompare(b.name))
+watchEffect(() => {
+  if (props.plants.length > 0) {
+    plantOptions.value = [...props.plants]
+      .filter(plant => !props.plantsByUser.some(userPlant => userPlant.ID === plant.ID))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }
 })
 watch([oldPassword, newPassword, newPasswordRepeat], () => disableButton.value = !oldPassword.value || !newPassword.value || !newPasswordRepeat.value)
 watch(searchInput, (newValue) => {emit("search-plant", newValue)})

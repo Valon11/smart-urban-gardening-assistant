@@ -133,12 +133,12 @@ function setStatus(){
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!store.getters.getUser) router.push('/start')
-  else{
-    getPlants()
-    getUserPlant()
-    //setStatus()
+  else {
+    await getPlants()
+    await getUserPlant()
+    // setStatus()
   }
 })
 </script>

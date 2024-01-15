@@ -9,11 +9,11 @@
       </div>
       <div class="flex flex-col space-y-2">
         <label for="username" class="font-bold">{{ $t('username') }}</label>
-        <InputText id="username" v-model="username" class="border py-2 px-4 rounded"/>
+        <InputText id="username" v-model="username" :placeholder="$t('placeholder')" class="border py-2 px-4 rounded"/>
       </div>
       <div class="flex flex-col space-y-2">
         <label for="password" class="font-bold">{{ $t('password') }}</label>
-        <Password id="password" v-model="password" toggleMask class="border rounded">
+        <Password id="password" v-model="password" :placeholder="$t('placeholder')" toggleMask class="border rounded">
           <template #header>
             <div class="font-bold">{{ $t('passwordSuggestions') }}</div>
           </template>
