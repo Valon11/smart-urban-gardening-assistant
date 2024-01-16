@@ -57,7 +57,6 @@ router.post('/register', (req, res) => {
       }
     })
     .catch((error) => {
-      console.error(error)
       res.status(500).json({ error: 'Database error' })
     })
 })
@@ -92,7 +91,7 @@ router.delete('/users/:id', async (req, res) => {
   try {
     await pool.execute('DELETE FROM UserPlant WHERE userID = ?', [id])
     await pool.execute('DELETE FROM User WHERE ID = ?', [id])
-    res.status(200).json({ message: 'User deleted successfully.' })
+    res.status(200).json({ message: 'User removed.' })
   } catch (error) {
     res.status(500).json({ error: 'Internal server error.' })
   }
