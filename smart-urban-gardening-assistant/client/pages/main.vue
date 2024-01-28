@@ -138,68 +138,23 @@ const addUserPlant = (plantChosen) => {
 
 function setStatus() {
   plantsByUser.value.forEach((plant) => {
-    const currentHumidity = environmentalConditions.value[1].value;
-    const currentLightIntensity = environmentalConditions.value[2].value;
-    const currentTemperature = environmentalConditions.value[0].value;
-  
-    const status = calculateStatus(
-      currentHumidity,
-      currentLightIntensity,
-      currentTemperature,
-      plant
-    );
+    const matchingCondition = environmentalConditionByPlant.find((condition) => condition.plantID === plant.ID)
 
-    // Assuming you have a property in the plant object to store the status
-    plant.status = status;
-  });
+    let status = "Deficient"
+    if (
+      humidity >= matchingCondition.idealHumMin && humidity <= matchingCondition.idealHumMax &&
+      lightIntensity >= matchingCondition.idealLightMin && lightIntensity <= matchingCondition.idealLightMax &&
+      temperature >= matchingCondition.idealTempMin && temperature <= matchingCondition.idealTempMax
+    ) status = "Ideal"
+    else if (
+      humidity >= matchingCondition.acceptHumMin && humidity <= matchingCondition.acceptHumMax &&
+      lightIntensity >= matchingCondition.acceptLightMin && lightIntensity <= matchingCondition.acceptLightMax &&
+      temperature >= matchingCondition.acceptTempMin && temperature <= matchingCondition.acceptTempMax
+    ) status = "Acceptable"
+
+    plant.status = status
+  })
 }
-
-function calculateStatus(humidity, lightIntensity, temperature, plant) {
-  const {
-    acceptHumMax,
-    acceptHumMin,
-    acceptLightMax,
-    acceptLightMin,
-    acceptTempMax,
-    acceptTempMin,
-    deficientHumMax,
-    deficientHumMin,
-    deficientLightMax,
-    deficientLightMin,
-    deficientTempMax,
-    deficientTempMin,
-    idealHumMax,
-    idealHumMin,
-    idealLightMax,
-    idealLightMin,
-    idealTempMax,
-    idealTempMin,
-  } = plant;
-
-  console.log(humidity)
-  if (
-    humidity >= acceptHumMin && humidity <= acceptHumMax &&
-    lightIntensity >= acceptLightMin && lightIntensity <= acceptLightMax &&
-    temperature >= acceptTempMin && temperature <= acceptTempMax
-  ) {
-    return "Acceptable";
-  } else if (
-    humidity >= idealHumMin && humidity <= idealHumMax &&
-    lightIntensity >= idealLightMin && lightIntensity <= idealLightMax &&
-    temperature >= idealTempMin && temperature <= idealTempMax
-  ) {
-    return "Ideal";
-  } else if (
-    humidity >= deficientHumMin && humidity <= deficientHumMax &&
-    lightIntensity >= deficientLightMin && lightIntensity <= deficientLightMax &&
-    temperature >= deficientTempMin && temperature <= deficientTempMax
-  ) {
-    return "Deficient";
-  } else {
-    return "Unknown";
-  }
-}
-
 
 onMounted(async () => {
   if (!store.getters.getUser) router.push('/start')
@@ -208,7 +163,7 @@ onMounted(async () => {
     await getUserPlant()
     await getEnvironmentalConditionByPlant()
     try {
-      const response = await axios.get('http://192.168.178.31:80/all')
+      const response = await axios.get('http://192.168.178.31:80/environmentalCondition')
       environmentalConditions.value[2].value = response.data.lightIntensity
       environmentalConditions.value[1].value = response.data.humidity
       environmentalConditions.value[0].value = response.data.temperature
