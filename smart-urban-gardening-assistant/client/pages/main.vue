@@ -100,6 +100,15 @@ const getUserPlant = async () => {
   }
 }
 
+const getEnvironmentalConditionByPlant = async () => {
+  try {
+    const response = await axios.get(`http://localhost:3001/environmentalConditionByPlant`)
+    environmentalConditionByPlant.value = response.data
+  } catch (error) {
+    console.error('Fehler beim Get der Umweltbedingungen:', error)
+  }
+}
+
 async function deleteUserPlant(plantId) {
   try {
     await axios.delete(`http://localhost:3001/user/${store.getters.getUser.ID}/plants/${plantId}`)
@@ -127,18 +136,86 @@ const addUserPlant = (plantChosen) => {
   plantsByUser.value.forEach(plant => !plant.status && (plant.status = 'Ideal'))
 }
 
-function setStatus(){
-  plants.value.forEach((plant) => {
+function setStatus() {
+  plantsByUser.value.forEach((plant) => {
+    const currentHumidity = environmentalConditions.value[1].value;
+    const currentLightIntensity = environmentalConditions.value[2].value;
+    const currentTemperature = environmentalConditions.value[0].value;
   
-  })
+    const status = calculateStatus(
+      currentHumidity,
+      currentLightIntensity,
+      currentTemperature,
+      plant
+    );
+
+    // Assuming you have a property in the plant object to store the status
+    plant.status = status;
+  });
 }
+
+function calculateStatus(humidity, lightIntensity, temperature, plant) {
+  const {
+    acceptHumMax,
+    acceptHumMin,
+    acceptLightMax,
+    acceptLightMin,
+    acceptTempMax,
+    acceptTempMin,
+    deficientHumMax,
+    deficientHumMin,
+    deficientLightMax,
+    deficientLightMin,
+    deficientTempMax,
+    deficientTempMin,
+    idealHumMax,
+    idealHumMin,
+    idealLightMax,
+    idealLightMin,
+    idealTempMax,
+    idealTempMin,
+  } = plant;
+
+  console.log(humidity)
+  if (
+    humidity >= acceptHumMin && humidity <= acceptHumMax &&
+    lightIntensity >= acceptLightMin && lightIntensity <= acceptLightMax &&
+    temperature >= acceptTempMin && temperature <= acceptTempMax
+  ) {
+    return "Acceptable";
+  } else if (
+    humidity >= idealHumMin && humidity <= idealHumMax &&
+    lightIntensity >= idealLightMin && lightIntensity <= idealLightMax &&
+    temperature >= idealTempMin && temperature <= idealTempMax
+  ) {
+    return "Ideal";
+  } else if (
+    humidity >= deficientHumMin && humidity <= deficientHumMax &&
+    lightIntensity >= deficientLightMin && lightIntensity <= deficientLightMax &&
+    temperature >= deficientTempMin && temperature <= deficientTempMax
+  ) {
+    return "Deficient";
+  } else {
+    return "Unknown";
+  }
+}
+
 
 onMounted(async () => {
   if (!store.getters.getUser) router.push('/start')
   else {
     await getPlants()
     await getUserPlant()
-    // setStatus()
+    await getEnvironmentalConditionByPlant()
+    try {
+      const response = await axios.get('http://192.168.178.31:80/all')
+      environmentalConditions.value[2].value = response.data.lightIntensity
+      environmentalConditions.value[1].value = response.data.humidity
+      environmentalConditions.value[0].value = response.data.temperature
+      setStatus()
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
   }
 })
 </script>
